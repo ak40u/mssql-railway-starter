@@ -23,6 +23,14 @@ if [ "$classes" -lt 3 ]; then
   exit 1
 fi
 
+# SQL Server reads the *host's* memory, not the container's limit - on this
+# platform it reports hundreds of gigabytes - and sizes its buffer pool from that.
+# It then allocates past what the container actually has and dies with "a fatal
+# error and cannot continue running", usually before it ever accepts a connection.
+# Capping it is not tuning, it is what makes the process survive at all.
+export MSSQL_MEMORY_LIMIT_MB="${MSSQL_MEMORY_LIMIT_MB:-2048}"
+echo "SQL Server memory limit: ${MSSQL_MEMORY_LIMIT_MB} MB"
+
 # The stock launcher is used as-is. It runs the image's permissions check and its
 # custom-setup phase, which is what creates MSSQL_DB and the MSSQL_USER login on
 # an empty data directory - reimplementing any of that would only diverge from it.
