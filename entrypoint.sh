@@ -31,10 +31,19 @@ fi
 export MSSQL_MEMORY_LIMIT_MB="${MSSQL_MEMORY_LIMIT_MB:-2048}"
 echo "SQL Server memory limit: ${MSSQL_MEMORY_LIMIT_MB} MB"
 
+# SQL Server also sizes internal structures from the host's CPU count, and on this
+# platform it sees the whole machine - 48 processors on the host this was traced on.
+# Starting with that many schedulers inside a container-sized cgroup overflows a
+# thread stack during startup ("Reason: Stack Overflow") and the engine dies, often
+# after having briefly accepted connections. Pinning it to a small, fixed set of
+# CPUs is what keeps it stable; MSSQL_CPU_COUNT changes how many.
+CPUS="${MSSQL_CPU_COUNT:-4}"
+echo "SQL Server pinned to $CPUS CPUs"
+
 # The stock launcher is used as-is. It runs the image's permissions check and its
 # custom-setup phase, which is what creates MSSQL_DB and the MSSQL_USER login on
 # an empty data directory - reimplementing any of that would only diverge from it.
-/opt/mssql/bin/launch_sqlservr.sh /opt/mssql/bin/sqlservr &
+taskset -c "0-$((CPUS-1))" /opt/mssql/bin/launch_sqlservr.sh /opt/mssql/bin/sqlservr &
 LAUNCHER=$!
 
 # What the launcher does not do is handle signals. It is a plain bash script, and
