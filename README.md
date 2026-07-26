@@ -1,5 +1,9 @@
 # SQL Server starter for Railway
 
+**Status: not working, and not published as a template.** SQL Server crashes on
+startup on Railway with `Reason: Stack Overflow` — see "What actually happens"
+below. This repository is kept for the diagnosis, not as something to deploy.
+
 Microsoft SQL Server 2025, pinned to a cumulative update, with a database and an
 application login created for you on first start.
 
